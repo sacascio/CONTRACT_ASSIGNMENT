@@ -20,10 +20,6 @@ class ACI:
 			logging.error(" File %s not found" % filename)
 			sys.exit(9)
 
-		# Build headers for the CSV
-		f = open("contract_assignment.csv", "a")
-		f.write("TENANT,INSTANCE_TYPE,INSTANCE,EPG,CONTRACT_TYPE,CONTRACT" + "\n")
-		f.close()
 
 	def load_file(self):
 		with open(self.filename) as json_file:
@@ -31,7 +27,7 @@ class ACI:
 
 		return data
 
-	def set_col_width(ws):
+	def set_col_width(self,ws):
 
 		dims = {}
 		for row in ws.rows:
@@ -47,7 +43,7 @@ class ACI:
 		contract_translation['fvRsCons'] = "Consumed"
 
 		sub_type = {}
-		sub_type['fvAp'] = 'AP'
+		sub_type['fvAp'] = 'AppProfile'
 		sub_type['l3extOut'] = 'L3OUT'
 
 		wb = Workbook()
@@ -55,12 +51,26 @@ class ACI:
 		ws = wb.active
 		ws.title = 'contract_assignments'
 
-		row = 2
-		#for col in range(1, 12):
-		#	cell = ws.cell(column=col, row=row)
-		#	cell.value = fields[col - 1]
+		row = 1
+		cell = ws.cell(column=1, row=row)
+		cell.value = 'TENANT'
 
-		col = 1
+		cell = ws.cell(column=2, row=row)
+		cell.value = 'INSTANCE_TYPE'
+
+		cell = ws.cell(column=3, row=row)
+		cell.value = 'INSTANCE_NAME'
+
+		cell = ws.cell(column=4, row=row)
+		cell.value = 'EPG'
+
+		cell = ws.cell(column=5, row=row)
+		cell.value = 'CONTRACT_TYPE'
+
+		cell = ws.cell(column=6, row=row)
+		cell.value = 'CONTRACT_NAME'
+
+		row = 2
 
 		for d in data['polUni']['children']:
 			for keys in d.keys():
@@ -77,14 +87,39 @@ class ACI:
 											for epg_children in instance[instance_keys]['children']:
 												for epg_contract_keys in epg_children.keys():
 													if epg_contract_keys == 'fvRsProv' or epg_contract_keys == 'fvRsCons':
+														col = 1
 														contract_name = epg_children[epg_contract_keys]['attributes']['tnVzBrCPName']
 														#print(tenant,sub_type[c_keys],sub_type_val,epg,contract_translation[epg_contract_keys],contract_name, sep=',')
-														cell = ws.cell(column=1, row=row)
+														cell = ws.cell(column=col, row=row)
 														cell.value = tenant
+														col+=1
 
-														cell = ws.cell(column=2, row=row)
+														cell = ws.cell(column=col, row=row)
 														cell.value = sub_type[c_keys]
-														row = row+1
+														col+=1
+
+														cell = ws.cell(column=col, row=row)
+														cell.value = sub_type_val
+														col+=1
+
+														cell = ws.cell(column=col, row=row)
+														cell.value = epg
+														col+=1
+
+														cell = ws.cell(column=col, row=row)
+														cell.value = contract_translation[epg_contract_keys]
+														col+=1
+
+														cell = ws.cell(column=col, row=row)
+														cell.value = contract_name
+
+														row+=1
+
+		self.set_col_width(ws)
+		ws.sheet_view.zoomScale = 125
+
+		# add filters
+		ws.auto_filter.ref = 'A1:F900'
 
 		wb.save(filename=file)
 
